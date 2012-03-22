@@ -442,24 +442,6 @@ char * print_lambda_expr_variables( struct lambda_expr * current ) {
 }
 
 
-/*============================================================
-
-Function: remove_lambda_expr_node
-
-Input: A reference to a lambda_expr
-
-Output: Nothing, but the memory used by that lambda_expr node,
-        and it's variable hashes, has been destroyed.
-
-============================================================*/
-
-void remove_lambda_expr_node( struct lambda_expr * current ) {
-    destroy_hash(current->bound);
-    destroy_hash(current->free);
-    free(current);
-}
-
-
 
 /*============================================================
 
@@ -492,322 +474,6 @@ char * fresh_variable( char * x, struct hash * V ) {
 
 /*============================================================
 
-Function: search_lambda_expr
-
-Input: A pointer to the root of an expression to be evaluated,
-       and and empty stack.
-
-Output: A lambda_search_state structure describing the state
-        of affairs after searching for the first beta-reduction
-        ( pre-order traversal ) in the given lambda_expr.
-        If not found, the search state will have it's
-        current field set to NULL. 
-	Furthermore, the given stack will contain previous search
-	states encountered in the path taken to get to the beta-reduction.
-
-============================================================*/
-
-/*
-struct lambda_search_state search_lambda_expr( struct lambda_expr * root, struct list * stack ) {
-    struct lambda_search_state * stack_top = malloc( sizeof( struct lambda_search_state ) );
-    stack_top->parent = NULL;
-    stack_top->current = root;
-    stack_top->parent_choice = 0;
-    stack_top->progress = 0;
-    append_to_list( stack, (void *) stack_top );
-    while ( stack->next_index ) {
-	if ( ! stack_top ) {
-	    stack_top = listlookup( stack, stack->next_index - 1 );
-	}
-	switch ( stack_top->progress ) {
-	case 0:
-	    stack_top->progress = 1;
-	    if ( is_beta_reduction( stack_top->current ) ) { // Found.
-		pop_from_list(stack);
-		struct lambda_search_state positive_result = {
-		    stack_top->parent,
-		    stack_top->current,
-		    stack_top->parent_choice,
-		    stack_top->progress,
-		};
-		return positive_result;
-	    }
-
-	    // Fall through to next case.
-	case 1:
-	    stack_top->progress = 2;
-	    if ( stack_top->current->child[0] ) {
-		stack_top = push_child( 0, stack_top, stack );
-	    }
-	    break;
-	case 2:
-	    stack_top->progress = 3;
-	    if ( stack_top->current->child[1] ) {
-		stack_top = push_child( 1, stack_top, stack );
-	    }
-	    break;
-	case 3:
-	    free( pop_from_list( stack ) );
-	    stack_top = NULL;  // Force re-lookup of stack_top.
-	    break;
-	default:
-	    break;
-	} // End switch on progress.
-    } // End while loop.
-
-    struct lambda_search_state negative_result = {
-	NULL,
-	NULL,
-	0,
-	0
-    };
-    return negative_result;
-}
-*/
-
-
-
-/*
-struct lambda_search_state search_lambda_expr( struct lambda_expr * root ) {
-    struct list * stack = new_list();
-    struct lambda_expr * parent = NULL;
-    struct lambda_expr * current = NULL;
-    struct lambda_expr * found = NULL;
-    int progress = 0;
-    int parent_choice = 0;
-    struct lambda_search_state * stack_top = malloc(sizeof(struct lambda_search_state));
-    stack_top->parent = NULL;
-    stack_top->current = root;
-    stack_top->parent_choice = 0;
-    stack_top->progress = 0;
-    append_to_list( stack, (void*) stack_top );
-    while ( stack->next_index ) {
-	if ( !stack_top ) {
-	    stack_top = listlookup( stack, stack->next_index - 1 );
-	}
-	current = stack_top->current;
-	switch ( stack_top->progress ) {
-	case 0:
-	    stack_top->progress = 1;
-	    if ( !found ) {
-		if ( is_beta_reduction(current) ) {
-		    parent = stack_top->parent;
-		    found = current;
-		    progress = stack_top->progress;
-		    parent_choice = stack_top->parent_choice;
-		}
-	    }
-
-	    // Fall through to the next case.
-	case 1:
-	    stack_top->progress = 2;
-	    if ( !found ) {
-		if ( current->child[0] ) {
-		    stack_top = push_child( 0, stack_top, stack );
-		}
-	    }
-	    break;
-	case 2:
-	    stack_top->progress = 3;
-	    if ( !found ) {
-		if ( current->child[1] ) {
-		    stack_top = push_child( 1, stack_top, stack );
-		}
-	    }
-	    break;
-	case 3:
-	    free(pop_from_list(stack));
-	    stack_top = NULL;
-	    break;
-	default:
-	    break;
-	} // End switch.
-    } // End while
-    destroy_hash(stack->main_hash->main_hash);
-    free(stack->main_hash);
-    free(stack);
-    struct lambda_search_state result = {
-	parent,
-	found,
-	parent_choice,
-	progress
-    };
-    return result;
-}
-*/
-
-/*============================================================
-
-Function: is_beta_reduction
-
-Input: A pointer to a lambda_expr
-
-Output: 1 or 0, depending on whether the given node is a 
-        candidate for beta-reduction or not.
-
-============================================================*/
-
-/*
-int is_beta_reduction( struct lambda_expr * current ) {
-    if ( strcmp( current->type, "BETA" ) ) {
-	return 0;
-    }
-    if ( strcmp( current->child[0]->type, "LAMBDA" ) ) {
-	return 0;
-    }
-    return 1;
-}
-*/
-
-/*============================================================
-
-Function: push_child
-
-Input: A character ( 'l' or 'r' ), a pointer to a lambda_search_state
-       structure, and a pointer to a stack.
-
-Output: A pointer to a newly-allocated lambda_search_state structure,
-        representing the state of affairs after moving from the current node
-	in the given search state, to either the left or the right child,
-	depending on whether the first argument was 'l' or 'r', respectively.
-	Furthermore, the new search state has been pushed onto the given stack.
-
-============================================================*/
-
-/*
-struct lambda_search_state * push_child( int requested_child, struct lambda_search_state * frame, struct list * stack ) {
-    struct lambda_search_state * new_frame = malloc(sizeof(struct lambda_search_state));
-    struct lambda_expr * current = frame->current;
-    new_frame->parent = current;
-    new_frame->progress = 0;
-    new_frame->current = current->child[requested_child];
-    new_frame->parent_choice = requested_child;
-    append_to_list( stack, (void *) new_frame );
-    return new_frame;
-}
-*/
-
-/*============================================================
-
-Function: reduce
-
-Input: A lambda_search_state 
-       ( consisting of parent, current, parent_choice, and progress ),
-       representing a found beta-reduction,
-       a pointer to a stack of previous search states encountered
-       in the path to the beta-reduction,
-       and a global hash V of used variable names.
-
-Output: Nothing, but the beta-reduction has been reduced, 
-        and the tree ( DAG ) has been altered accordingy.
-	As a result, some memory may have been freed,
-	and some new memory may have been allocated.
-
-============================================================*/
-
-/*
-void reduce( struct lambda_search_state search_state, struct list * stack, struct hash * V ) {
-printf("Inside reduce, got called.\n");
-    struct lambda_expr * beta = search_state.current;
-    struct lambda_expr * lambda = beta->child[0];
-    struct lambda_expr * expr = beta->child[1];
-    struct lambda_expr * var = lambda->child[0];
-    struct lambda_expr * source = lambda->child[1];
-
-    // Prepare to replace beta with source, 
-    // by disconnecting source, and substituting expr into it.
-    lambda->child[1] = NULL;
-    source->parents -= 1;
-printf("Inside reduce, about to call substitute.\n");
-    source = substitute( expr, var, source, V );
-printf("Inside reduce, made it back from the substitute call.\n");
-    struct lambda_expr * parent = search_state.parent;
-printf("Inside reduce, the parent ( whose child needs changed ) has address:<br />\n" );
-printf( "%p<br />\n", parent );
-    int parent_choice = search_state.parent_choice;
-printf("Inside reduce, about to call change_child.\n");
-    change_child( parent_choice, parent, source, stack );
-printf("Inside reduce, made it back from the change_child call.\n");
-    return;
-}
-*/
-
-/*
-void reduce ( struct lambda_search_state search_state, struct hash * V ) {
-    struct lambda_expr * beta = search_state.current;
-    struct lambda_expr * lambda = beta->child[0];
-    struct lambda_expr * expr = beta->child[1];
-    struct lambda_expr * var = lambda->child[0];
-    struct lambda_expr * source = lambda->child[1];
-
-    lambda->child[1] = NULL;
-    source->parents -= 1; //Disconnect source and subsitute.
-    source = substitute( expr, var, source, V );
-
-    // Check if a copy needs to be made.
-    if ( search_state.parent->parents > 1 ) {
-	struct lambda_expr new_parent = new_lambda_expr();
-	new_parent->bound = copy_hash( search_state.parent->bound );
-	new_parent->free = copy_hash( search_state.parent->free );
-	new_parent->child[search_state.parent_choice] = source;
-	int static_child = (search_state.parent_choice + 1) % 2;
-	new_parent->child[static_child] = search_state.parent->child[static_child];
-	search_state.grandparent->child[search_state.grandparent_choice] = new_parent;
-	new_parent->parents += 1;
-	search_state.parent->parents -= 1;
-    }
-    search_state.parent->child[search_state.parent_choice] = source;
-    source->parents += 1;
-    try_to_delete(beta);
-    return;
-}
-*/
-
-
-/*============================================================
-
-Function: substitute
-
-Input: A pointer to a lambda expression to substitute ( expr ),
-       a pointer to a VAR expression to look for ( var ),
-       a pointer to a lambda expression to search through ( current ),
-       and a global hash of used variable names ( V ).
-
-Output: A pointer to the result of substituting 
-        expr for occurrences of var in current, 
-	after possibly renaming things in current according to V.
-
-============================================================*/
-/*
-struct lambda_expr * substitute( struct lambda_expr * expr, struct lambda_expr * var, struct lambda_expr * current, struct hash * V ) {
-    if ( !strcmp( current->type, "VAR" ) ){
-	if ( current == var ) { //Replace with expr.
-	    try_to_delete(current);
-	    return expr;
-	}
-	return current;
-    }
-    if ( !strcmp( current->type, "LAMBDA" ) ) {
-	if ( current->child[0] == var ) {
-	    return current;
-	}
-	if ( hashlookup( expr->free, current->child[0]->data ) ) {
-	    rename_bound_var( current, V );
-	}
-    }
-    int i;
-    for ( i = 0; i < 2; i++ ) {
-	current->child[i]->parents -= 1; // Temporarily break link.
-	current->child[i] = substitute( expr, var, current->child[i], V );
-	current->child[i]->parents += 1; // Re-attach link.
-    }
-    return current;
-
-}
-*/
-
-/*============================================================
-
 Function: change_child
 
 Input: An integer ( 0 or 1 ), 
@@ -824,8 +490,12 @@ void change_child( int choice, struct list * stack, int i, struct lambda_expr * 
     struct lambda_search_state * current_state = listlookup( stack, i );
     struct lambda_expr * current_node = current_state->current;
     struct lambda_expr * old_child = current_node->child[choice];
+    if ( new_child == old_child ) {
+	return;
+    }
     struct lambda_expr * static_child = current_node->child[( choice + 1 ) % 2 ];
-    if ( current_node->parents <= 1 ) { // Safe to change this one.
+
+    if ( current_node->parents == 0 ) { // Safe to change this one.
 	old_child->parents -= 1;
 	current_node->child[choice] = new_child;
 	new_child->parents += 1;
@@ -916,12 +586,12 @@ Input: A stack, with the starting node represented by the search
        and a function (returning 0 or 1) to be run on each search state encountered
        during the traversal.
 
-Output: A poiner to the node represented by the last search state encountered
-        during the traversal.
+Output: 1 or 0, depending on whether the traversal ended prematurely ( done processing = 1 )
+        or not ( the whole tree was traversed ).
 
 ============================================================*/
 
-struct lambda_expr * pre_order_traverse( struct list * stack, int (*process_and_stop)( struct lambda_search_state *, struct list * ) ) {
+int pre_order_traverse( struct list * stack, int (*process_and_stop)( struct lambda_search_state *, struct list * ) ) {
     int done_processing = 0;
     int current_progress = 0;
     int original_i = stack->next_index - 1;
@@ -958,64 +628,13 @@ struct lambda_expr * pre_order_traverse( struct list * stack, int (*process_and_
 	else { // Node has finished processing.
 	    if ( stack->next_index - 1 == original_i ) {
 		stack_top->progress = original_progress; // Restore.
-		return stack_top->current; // Get the latest changes.
+		return done_processing;
 	    }
 	    free( pop_from_list(stack) );
 	    stack_top = NULL;
 	}
     }
 }
-
-
-
-/*============================================================
-
-Function: change_child
-
-Input: An integer ( 0 or 1 ), representing a child pointer to change,
-       a pointer to a lambda_expr whose child pointer needs to change,
-       a pointer to a lambda_expr to change the child pointer to,
-       and a stack of search states such that 
-       the lambda_expr to change is stack_top->current.
-
-Output: Nothing, but the tree has been changed appropriately.
-        As a result, some memory may have been freed,
-	or some new memory will have been allocated.
-
-============================================================*/
-
-/*
-void change_child( int choice, struct lambda_expr * node, struct lambda_expr * new_child, struct list * stack ) {
-printf("Inside change_child, got called with choice = %d.\n", choice );
-printf("The node whose child is to be changed has address:<br />\n");
-printf( "%p<br />\n", node );
-    if ( node->parents <= 1 ) {
-printf("Inside change_child, realized that the given node has only one parent.\n");
-	struct lambda_expr * old_child = node->child[choice];
-	old_child->parents -= 1;
-printf("Inside change_child, about to call try_to_delete.\n");
-	try_to_delete(old_child);
-printf("Inside change_child, made it back from try_to_delete.\n");
-	node->child[choice] = new_child;
-	new_child->parents += 1;
-	return;
-    }
-    
-    // Otherwise, more than one node is depending on the given node to be the way it is.
-    // In order to effectively change the child, 
-    // make a copy and connect it to the same point in the stack's path.
-    int static_choice = ( choice + 1 ) % 2;
-    struct lambda_expr * copy = copy_lambda_expr( node ); // The copy has 0 parents. 
-    node->child[static_choice]->parents += 1; // The copy will also use static child.
-    copy->child[choice] = new_child;
-    new_child->parents += 1;
-    struct lambda_search_state * stack_top = pop_from_list( stack );
-    change_child( stack_top->parent_choice, stack_top->parent, copy, stack );
-    return;
-}
-*/
-
-/*
 
 
 /*============================================================
@@ -1037,7 +656,10 @@ struct lambda_expr * substitute( struct lambda_expr * expr, struct lambda_expr *
     // Set global vars to be accessed during the traversal.
     EXPR = expr;
     VAR = var;
-    return pre_order_traverse( stack, &process_substitution_candidate );
+//    return pre_order_traverse( stack, &process_substitution_candidate );
+    pre_order_traverse( stack, &process_substitution_candidate );
+    struct lambda_search_state * stack_top = listlookup( stack, stack->next_index - 1 );
+    return stack_top->current;
 }
 
 
@@ -1060,7 +682,7 @@ Output: 0, but the node represented by the state at the top
 int process_substitution_candidate( struct lambda_search_state * current_state, struct list * stack ) {
     int original_i = stack->next_index - 1;
     if ( current_state->current == VAR ) { // This node matches previously set global VAR.
-	
+
 	// Use change_child to substitute EXPR for VAR.
 	change_child( current_state->parent_choice, stack, original_i - 1, EXPR );
     }
@@ -1071,7 +693,6 @@ int process_substitution_candidate( struct lambda_search_state * current_state, 
 	}
 	char * varname = left_child->data;
 	if ( hashlookup( EXPR->free, varname ) ) {
-//	    rename_var( left_child, current_state->current );
 	    rename_var( left_child, stack );
 	}
     }
@@ -1246,6 +867,26 @@ void add_to_global_V( char * key, struct lambda_expr * value ) {
     add_to_hash( V, key, (void*) value );
     return;
 }
+
+
+/*============================================================
+
+Function: set_global_V
+
+Input: A pointer to a hash to use as V.
+
+Output: Nothing, but this module's V is set to the given hash.
+
+============================================================*/
+
+void set_global_V( struct hash * varhash ) {
+    V = varhash;
+}
+
+struct hash * get_global_V() {
+    return V;
+}
+
 
 /*============================================================
 

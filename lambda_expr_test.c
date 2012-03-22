@@ -5,10 +5,15 @@
 #include "hash.h"
 #include "list.h"
 #include "lambda_expr.h"
+#include "lambda_parser.h"
 
 int main() {
 
     struct lambda_expr * node1, * node2, * node3, * node4, * node5, * node6, * node7, * node8, * node9, * node10, * node11, * node12, * root;
+    struct lambda_expr	* result;
+    char * xstring, * ystring, * fstring, * wstring, * zstring;
+    struct lambda_search_state * state1, * state2, * stack_top;
+    struct list * stack;
 
 /***** // Testing the print function.
 
@@ -329,7 +334,7 @@ int main() {
     printf( "The expr looks like: <br />\n" );
     printf( "%s<br />\n", print_lambda_expr(expr) );
 
-    struct lambda_expr * result = substitute( expr, fstring, source, V );
+    result = substitute( expr, fstring, source, V );
 
     update_variables(result);
 
@@ -339,146 +344,181 @@ int main() {
 
     /****/ // End testing substitute function.
     
-
-    /**** // Begin testing search_lambda_expr.
+    /*
+    //
+    // Testing
+    //
 
     // Build lambda_expr.
-    char * xstring = "x";
-    char * ystring = "y";
-    char * wstring = "w";
-    char * zstring = "z";
+    xstring = malloc( 2 * sizeof( char ) );
+    sprintf( xstring, "x" );
+    ystring = malloc( 2 * sizeof( char ) );
+    sprintf( ystring, "y" );
+    zstring = malloc( 2 * sizeof( char ) );
+    sprintf( zstring, "z" );
+    wstring = malloc( 2 * sizeof( char ) );
+    sprintf( wstring, "w" );
+
     node1 = new_lambda_expr();
     strcpy( node1->type, "VAR" );
-    node1->data = ystring;
+    node1->data = xstring;
+    add_to_global_V( xstring, node1 );
 
     node2 = new_lambda_expr();
     strcpy( node2->type, "VAR" );
-    node2->data = wstring;
+    node2->data = ystring;
+    add_to_global_V( ystring, node2 );
 
     node3 = new_lambda_expr();
     strcpy( node3->type, "VAR" );
     node3->data = wstring;
+    add_to_global_V( wstring, node3 );
 
     node4 = new_lambda_expr();
     strcpy( node4->type, "VAR" );
     node4->data = zstring;
+    add_to_global_V( zstring, node4 );
 
     node5 = new_lambda_expr();
-    strcpy( node5->type, "VAR" );
-    node5->data = xstring;
+    strcpy( node5->type, "LAMBDA" );
+    node5->child[0] = node2; node2->parents += 1;
+    node5->child[1] = node3; node3->parents += 1;
 
     node6 = new_lambda_expr();
-    strcpy( node6->type, "VAR" );
-    node6->data = ystring;
+    strcpy( node6->type, "BETA" );
+    node6->child[0] = node3; node3->parents += 1;
+    node6->child[1] = node4; node4->parents += 1;
 
     node7 = new_lambda_expr();
     strcpy( node7->type, "LAMBDA" );
-    node7->child[0] = node1;
-    node7->child[1] = node2;
+    node7->child[0] = node1; node1->parents += 1;
+    node7->child[1] = node2; node2->parents += 1;
 
     node8 = new_lambda_expr();
     strcpy( node8->type, "BETA" );
-    node8->child[0] = node3;
-    node8->child[1] = node4;
+    node8->child[0] = node5; node5->parents += 1;
+    node8->child[1] = node6; node6->parents += 1;
 
     node9 = new_lambda_expr();
-    strcpy( node9->type, "LAMBDA" );
-    node9->child[0] = node5;
-    node9->child[1] = node6;
+    strcpy( node9->type, "BETA" );
+    node9->child[0] = node7; node7->parents += 1;
+    node9->child[1] = node8; node8->parents += 1;
 
     node10 = new_lambda_expr();
-    strcpy( node10->type, "BETA" );
-    node10->child[0] = node7;
-    node10->child[1] = node8;
+    strcpy( node10->type, "ROOT" );
+    node10->child[0] = node9; node9->parents += 1;
 
-    root = new_lambda_expr();
-    strcpy( root->type, "LAMBDA" );
-    root->child[0] = node9;
-    root->child[1] = node10;
-
-    update_variables(root);
-
+    update_variables(node10);
     printf( "Before searching for the next beta-reduction, the expression looks like: <br />\n" );
-    printf( "%s<br />\n", print_lambda_expr(root) );
+    printf( "%s<br />\n", print_lambda_expr(node10) );
     
-    struct list * stack = new_list();
-    struct lambda_search_state result = search_lambda_expr( root, stack );
-    printf( "The first candidate for beta-reduction looks like: <br />\n" );
-    printf( "%s<br />\n", print_lambda_expr(result.current) );
+    state1 = new_lambda_search_state();
+    state1->parent = NULL;
+    state1->current = node10;
+    state1->parent_choice = 0;
+    state1->progress = 0;
 
-    struct hash * V = new_hash();
-    expand_variables( V, result.current->bound );
-    expand_variables( V, result.current->free );
-    reduce( result, stack, V );
+    state2 = new_lambda_search_state();
+    state2->parent = node10;
+    state2->current = node9;
+    state2->parent_choice = 0;
+    state2->progress = 0;
 
-    printf( "After beta-reduction, the entire tree looks like:<br />\n" );
-    printf( "%s<br />\n", print_lambda_expr(root) );
+    stack = new_list();
+    append_to_list( stack, (void *) state1 );
+    append_to_list( stack, (void *) state2 );
+    
+    pre_order_traverse( stack, &process_beta_reduction );
+    stack_top = listlookup( stack, stack->next_index - 1 );
+    result = stack_top->current;
+    update_variables( result );
+    printf( "After reduction, the entire expression looks like:<br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( result ) );
 
-    /****/ // End testing search_lambda_expr.
 
-    /**** // Begin testing reduce function.
 
-    char * fstring = "f";
-    char * xstring = "x";
+
+    //
+    // TESTING
+    //
+    fstring = "f";
+    xstring = "x";
 
     node1 = new_lambda_expr();
     strcpy( node1->type, "VAR" );
     node1->data = fstring;
+    add_to_global_V( fstring, node1 );
 
     node2 = new_lambda_expr();
     strcpy( node2->type, "VAR" );
     node2->data = xstring;
+    add_to_global_V( xstring, node2 );
 
     node3 = new_lambda_expr();
     strcpy( node3->type, "BETA" );
-    node3->child[0] = node1;
-    node3->child[1] = node2;
+    node3->child[0] = node1; node1->parents += 1;
+    node3->child[1] = node2; node2->parents += 1;
 
     node4 = new_lambda_expr();
     strcpy( node4->type, "LAMBDA" );
-    node4->child[0] = node2;
-    node4->child[1] = node3;
+    node4->child[0] = node2; node2->parents += 1;
+    node4->child[1] = node3; node3->parents += 1;
 
     node5 = new_lambda_expr();
     strcpy( node5->type, "BETA" );
-    node5->child[0] = node4;
-    node5->child[1] = node3;
+    node5->child[0] = node4; node4->parents += 1;
+    node5->child[1] = node3; node3->parents += 1;
 
     node6 = new_lambda_expr();
     strcpy( node6->type, "LAMBDA" );
-    node6->child[0] = node1;
-    node6->child[1] = node5;
+    node6->child[0] = node1; node1->parents += 1;
+    node6->child[1] = node5; node5->parents += 1;
 
-    update_variables( node6 );
+    node7 = new_lambda_expr();
+    strcpy( node7->type, "ROOT" );
+    node7->child[0] = node6; node6->parents += 1;
+
+    update_variables( node7 );
     printf("Before searching for a valid beta-reduction, node6 looks like:<br />\n");
     printf( "%s<br />\n", print_lambda_expr(node6) );
 
-    struct list * stack = new_list();
-    struct lambda_search_state search_state = search_lambda_expr( node6, stack );
-    printf( "The first candidate for beta-reduction looks like:<br />\n" );
-    printf( "%s<br />\n", print_lambda_expr( search_state.current ) );
+    state1 = new_lambda_search_state();
+    state1->parent = NULL;
+    state1->current = node7;
+    state1->parent_choice = 0;
+    state1->progress = 0;
 
-    struct hash * V = new_hash();
-    expand_variables( V, node6->bound );
-    expand_variables( V, node6->free );
+    state2 = new_lambda_search_state();
+    state2->parent = node7;
+    state2->current = node6;
+    state2->parent_choice = 0;
+    state2->progress = 0;
 
-    reduce( search_state, stack, V );
-    update_variables( node6 );
+    stack = new_list();
+    append_to_list( stack, (void *) state1 );
+    append_to_list( stack, (void *) state2 );
+    
+    pre_order_traverse( stack, &process_beta_reduction );
+    stack_top = listlookup( stack, stack->next_index - 1 );
+    result = stack_top->current;
+    update_variables( result );
     printf( "After reduction, the entire expression looks like:<br />\n" );
-    printf( "%s<br />\n", print_lambda_expr( node6 ) );
+    printf( "%s<br />\n", print_lambda_expr( result ) );
+    */
 
-
-    /****/ // End testing 
-
-    // Begin testing a single beta-reduction.
     /*
-    char * xstring = malloc( 2 * sizeof( char ) );
+    //
+    // Testing
+    //
+    xstring = malloc( 2 * sizeof( char ) );
     sprintf( xstring, "x" );
-printf( "just allocated xstring: %p<br />\n", xstring );
-    char * fstring = malloc( 2 * sizeof( char ) );
+
+    fstring = malloc( 2 * sizeof( char ) );
     sprintf( fstring, "f" );
-    char * ystring = malloc( 2 * sizeof( char ) );
+
+    ystring = malloc( 2 * sizeof( char ) );
     sprintf( ystring, "y" );
+    
     node1 = new_lambda_expr();
     strcpy( node1->type, "VAR" );
     node1->data = xstring;
@@ -495,7 +535,6 @@ printf( "just allocated xstring: %p<br />\n", xstring );
     add_to_global_V( fstring, node3 );
 
     node4 = new_lambda_expr();
-printf( "node4 is: %p<br />\n", node4 );
     strcpy( node4->type, "BETA" );
     node4->child[0] = node1; node1->parents += 1;
     node4->child[1] = node2; node2->parents += 1;
@@ -506,14 +545,12 @@ printf( "node4 is: %p<br />\n", node4 );
     node5->child[1] = node4; node4->parents += 1;
 
     node6 = new_lambda_expr();
-printf( "node6 is: %p<br />\n", node6 );
     strcpy( node6->type, "BETA" );
     node6->child[0] = node3; node3->parents += 1;
     node6->child[1] = node2; node2->parents += 1;
 
     node7 = new_lambda_expr();
     strcpy( node7->type, "BETA" );
-printf( "node7 is: %p<br />\n", node7 );
     node7->child[0] = node5; node5->parents += 1;
     node7->child[1] = node6; node6->parents += 1;
 
@@ -522,38 +559,38 @@ printf( "node7 is: %p<br />\n", node7 );
     node8->child[0] = node7; node7->parents += 1;
 
     update_variables( node8 );
-printf( "The whole expression looks like:<br />\n" );
-printf( "%s<br />\n", print_lambda_expr( node8 ) );
+    printf( "The whole expression looks like:<br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( node8 ) );
 
-    struct lambda_search_state * state1 = new_lambda_search_state();
+    state1 = new_lambda_search_state();
     state1->parent = NULL;
     state1->current = node8;
     state1->parent_choice = 0;
     state1->progress = 0;
 
-    struct lambda_search_state * state2 = new_lambda_search_state();
+    state2 = new_lambda_search_state();
     state2->parent = node8;
     state2->current = node7;
     state2->parent_choice = 0;
     state2->progress = 0;
 
-    struct list * stack = new_list();
+    stack = new_list();
     append_to_list( stack, (void *) state1 );
     append_to_list( stack, (void *) state2 );
 
-    printf( "about to try and perform a beta-reduction.<br />\n" );
-    struct lambda_expr * reduced = pre_order_traverse( stack, &process_beta_reduction );
+    pre_order_traverse( stack, &process_beta_reduction );
     update_variables( node8 );
-printf( "after reduction, the whole thing looks like:<br />\n" );
-printf( "%s<br />\n", print_lambda_expr( node8 ) );
-    printf( "The result of the beta-reduction (%p) is:<br />\n", reduced );
-    printf( "%s<br />\n", print_lambda_expr( reduced ) );
+    printf( "after reduction, the whole thing looks like:<br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( node8 ) );
     */
 
     /*
-    char * xstring = malloc( 2 * sizeof( char ) );
+    // 
+    // Testing
+    //
+    xstring = malloc( 2 * sizeof( char ) );
     sprintf( xstring, "x" );
-    char * ystring = malloc( 2 * sizeof( char ) );
+    ystring = malloc( 2 * sizeof( char ) );
     sprintf( ystring, "y" );
 
     node1 = new_lambda_expr();
@@ -586,40 +623,40 @@ printf( "%s<br />\n", print_lambda_expr( node8 ) );
     node6->child[0] = node5; node5->parents += 1;
 
     update_variables( node6 );
-printf( "The whole expression looks like:<br />\n" );
-printf( "%s<br />\n", print_lambda_expr( node6 ) );
+    printf( "The whole expression looks like:<br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( node6 ) );
 
-    struct lambda_search_state * state1 = new_lambda_search_state();
+    state1 = new_lambda_search_state();
     state1->parent = NULL;
     state1->current = node6;
     state1->parent_choice = 0;
     state1->progress = 0;
 
-    struct lambda_search_state * state2 = new_lambda_search_state();
+    state2 = new_lambda_search_state();
     state2->parent = node6;
     state2->current = node5;
     state2->parent_choice = 0;
     state2->progress = 0;
 
-    struct list * stack = new_list();
+    stack = new_list();
     append_to_list( stack, (void *) state1 );
     append_to_list( stack, (void *) state2 );
 
-    printf( "about to try and perform a beta-reduction.<br />\n" );
-    struct lambda_expr * reduced = pre_order_traverse( stack, &process_beta_reduction );
+    pre_order_traverse( stack, &process_beta_reduction );
     update_variables( node6 );
-printf( "after reduction, the whole thing looks like:<br />\n" );
-printf( "%s<br />\n", print_lambda_expr( node6 ) );
-    printf( "The result of the beta-reduction (%p) is:<br />\n", reduced );
-    printf( "%s<br />\n", print_lambda_expr( reduced ) );
-*/
+    printf( "after reduction, the whole thing looks like:<br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( node6 ) );
+    */
 
     /*
-    char * xstring = malloc( 2 * sizeof( char ) );
+    //
+    // Testing
+    //
+    xstring = malloc( 2 * sizeof( char ) );
     sprintf( xstring, "x" );
-    char * ystring = malloc( 2 * sizeof( char ) );
+    ystring = malloc( 2 * sizeof( char ) );
     sprintf( ystring, "y" );
-    char * zstring = malloc( 2 * sizeof( char ) );
+    zstring = malloc( 2 * sizeof( char ) );
     sprintf( zstring, "z" );
 
     node1 = new_lambda_expr();
@@ -656,39 +693,41 @@ printf( "%s<br />\n", print_lambda_expr( node6 ) );
     node7->child[0] = node6; node6->parents += 1;
 
     update_variables( node7 );
-printf( "The whole expression looks like:<br />\n" );
-printf( "%s<br />\n", print_lambda_expr( node7 ) );
+    printf( "The whole expression looks like:<br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( node7 ) );
 
-    struct lambda_search_state * state1 = new_lambda_search_state();
+    state1 = new_lambda_search_state();
     state1->parent = NULL;
     state1->current = node7;
     state1->parent_choice = 0;
     state1->progress = 0;
 
-    struct lambda_search_state * state2 = new_lambda_search_state();
+    state2 = new_lambda_search_state();
     state2->parent = node7;
     state2->current = node6;
     state2->parent_choice = 0;
     state2->progress = 0;
 
-    struct list * stack = new_list();
+    stack = new_list();
     append_to_list( stack, (void *) state1 );
     append_to_list( stack, (void *) state2 );
 
     printf( "about to try and perform a beta-reduction.<br />\n" );
-    struct lambda_expr * reduced = pre_order_traverse( stack, &process_beta_reduction );
+    pre_order_traverse( stack, &process_beta_reduction );
     update_variables( node7 );
-printf( "after reduction, the whole thing looks like:<br />\n" );
-printf( "%s<br />\n", print_lambda_expr( node7 ) );
-    printf( "The result of the beta-reduction (%p) is:<br />\n", reduced );
-    printf( "%s<br />\n", print_lambda_expr( reduced ) );
-    */
+    printf( "after reduction, the whole thing looks like:<br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( node7 ) );
 
-    char * xstring = malloc( 2 * sizeof( char ) );
+
+	//
+	// TESTING
+	//
+
+    xstring = malloc( 2 * sizeof( char ) );
     sprintf( xstring, "x" );
-    char * ystring = malloc( 2 * sizeof( char ) );
+    ystring = malloc( 2 * sizeof( char ) );
     sprintf( ystring, "y" );
-    char * zstring = malloc( 2 * sizeof( char ) );
+    zstring = malloc( 2 * sizeof( char ) );
     sprintf( zstring, "z" );
 
     node1 = new_lambda_expr();
@@ -727,34 +766,195 @@ printf( "%s<br />\n", print_lambda_expr( node7 ) );
     node7->child[0] = node6; node6->parents += 1;
 
     update_variables( node7 );
-printf( "The whole expression looks like:<br />\n" );
-printf( "%s<br />\n", print_lambda_expr( node7 ) );
+    printf( "The whole expression looks like:<br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( node7 ) );
 
-    struct lambda_search_state * state1 = new_lambda_search_state();
+    state1 = new_lambda_search_state();
     state1->parent = NULL;
     state1->current = node7;
     state1->parent_choice = 0;
     state1->progress = 0;
 
-    struct lambda_search_state * state2 = new_lambda_search_state();
+    state2 = new_lambda_search_state();
     state2->parent = node7;
     state2->current = node6;
     state2->parent_choice = 0;
     state2->progress = 0;
 
-    struct list * stack = new_list();
+    stack = new_list();
     append_to_list( stack, (void *) state1 );
     append_to_list( stack, (void *) state2 );
 
-    printf( "about to try and perform a beta-reduction.<br />\n" );
-    struct lambda_expr * reduced = pre_order_traverse( stack, &process_beta_reduction );
-printf( "Got back from the outer pre_order_traverse call.<br />\n" );
+    pre_order_traverse( stack, &process_beta_reduction );
     update_variables( node7 );
-printf( "after reduction, the whole thing looks like:<br />\n" );
-printf( "%s<br />\n", print_lambda_expr( node7 ) );
-    printf( "The result of the beta-reduction (%p) is:<br />\n", reduced );
-    printf( "%s<br />\n", print_lambda_expr( reduced ) );
-    
+    printf( "after reduction, the whole thing looks like:<br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( node7 ) );
+*/
+
+    //
+    // Testing
+    //
+    fstring = malloc( 2 * sizeof( char ) );
+    sprintf( fstring, "f" );
+    xstring = malloc( 2 * sizeof( char ) );
+    sprintf( xstring, "x" );
+
+    node1 = new_lambda_expr();
+    strcpy( node1->type, "VAR" );
+    node1->data = fstring;
+    add_to_global_V( fstring, node1 );
+
+    node2 = new_lambda_expr();
+    strcpy( node2->type, "VAR" );
+    node2->data = xstring;
+    add_to_global_V( xstring, node2 );
+
+    node3 = new_lambda_expr();
+printf( "node3 has address: %p<br />\n", node3 );
+    strcpy( node3->type, "BETA" );
+    node3->child[0] = node1; node1->parents += 1;
+    node3->child[1] = node2; node2->parents += 1;
+
+    node4 = new_lambda_expr();
+    strcpy( node4->type, "LAMBDA" );
+    node4->child[0] = node2; node2->parents += 1;
+    node4->child[1] = node3; node3->parents += 1;
+
+    node5 = new_lambda_expr();
+    strcpy( node5->type, "LAMBDA" );
+    node5->child[0] = node1; node1->parents += 1;
+    node5->child[1] = node4; node4->parents += 1;
+
+    node6 = new_lambda_expr();
+    strcpy( node6->type, "BETA" );
+    node6->child[0] = node5; node5->parents += 1;
+    node6->child[1] = node1; node1->parents += 1;
+
+    node7 = new_lambda_expr();
+    strcpy( node7->type, "BETA" );
+    node7->child[0] = node6; node6->parents += 1;
+    node7->child[1] = node2; node2->parents += 1;
+
+    node8 = new_lambda_expr();
+    strcpy( node8->type, "BETA" );
+    node8->child[0] = node6; node6->parents += 1;
+    node8->child[1] = node7; node7->parents += 1;
+
+    node9 = new_lambda_expr();
+    strcpy( node9->type, "ROOT" );
+    node9->child[0] = node8; node8->parents += 1;
+
+    state1 = new_lambda_search_state();
+    state1->parent = NULL;
+    state1->current = node9;
+    state1->parent_choice = 0;
+    state1->progress = 0;
+
+    state2 = new_lambda_search_state();
+    state2->parent = node9;
+    state2->current = node8;
+    state2->parent_choice = 0;
+    state2->progress = 0;
+
+    stack = new_list();
+    append_to_list( stack, state1 );
+    append_to_list( stack, state2 );
+
+    update_variables( node9 );
+    printf( "Before trying to reduce the first time, the whole expression looks like: <br />\n" );
+    printf( "%s<br />\n", print_lambda_expr(node9) );
+    int change = 0;
+    while ( change = pre_order_traverse( stack, &process_beta_reduction ) ) {
+	update_variables( node9 );
+	printf( "%s<br />\n", print_lambda_expr( node9 ) );
+    }
+printf( "Made it past the manual test.<br />\n" );
+//    char * test_string = "(\\x.y,z)";
+    char * test_string = "((\\f\\x(f,x),f),((\\f\\x(f,x),f),x))";
+    char * error;
+    fill_TABLE();
+    fill_GOTO();
+    fill_TRIE();
+    init_NODE_HASH();
+printf( "About to try and parse the test string of %s<br />\n", test_string );
+    struct lambda_expr * parsed_result = parse( test_string, error );
+printf( "made it past the parsing of the test string.<br />\n" );
+    // Try and propagate varnames to the evaluator's V hash.
+    set_global_V( hashlookup( get_NODE_HASH(), "VAR" )->data );
+printf( "Before starting any reductions, the global V hash looks like:<br />\n" );
+printf( "%s<br />\n", hashtreeprint( get_global_V(), "" ) );
+    node9 = new_lambda_expr();
+    strcpy( node9->type, "ROOT" );
+    node9->child[0] = parsed_result; parsed_result->parents += 1;
 
 
+    state1 = new_lambda_search_state();
+    state1->parent = NULL;
+    state1->current = node9;
+    state1->parent_choice = 0;
+    state1->progress = 0;
+
+    state2 = new_lambda_search_state();
+    state2->parent = node9;
+    state2->current = parsed_result;
+    state2->parent_choice = 0;
+    state2->progress = 0;
+
+    stack = new_list();
+    append_to_list( stack, state1 );
+    append_to_list( stack, state2 );
+
+    update_variables( node9 );
+printf( "Before trying any reductions, the tree looks like: <br />\n" );
+printf( "%s<br />\n", print_lambda_expr( node9 ) );
+    change = 0;
+    while ( change = pre_order_traverse( stack, &process_beta_reduction ) ) {
+	update_variables( node9 );
+	printf( "%s<br />\n", print_lambda_expr( node9 ) );
+    }
+    /*
+
+
+    int change = pre_order_traverse( stack, &process_beta_reduction );
+printf( "about to call update variables on node: %p<br />\n", node9 );
+    update_variables( node9 );
+    printf( "After reducing the first time ( with change = %d ), the whole expression looks like: <br />\n", change );
+    printf( "%s<br />\n", print_lambda_expr( node9 ) );
+printf( "About to call pre_order_traverse again.<br />\n" );
+    change = pre_order_traverse( stack, &process_beta_reduction );
+printf( "Just got done calling pre_order_traverse the second time.<br />\n" );
+printf( "about to call update_variables the second time, on node: %p<br />\n", node9 );
+//exit(1);
+    update_variables( node9 );
+printf( "Just got done calling update_variables the second time.<br />\n" );
+    printf( "After reducing the second time ( with change = %d ), the whole expression looks like: <br />\n", change );
+    printf( "%s<br />\n", print_lambda_expr( node9 ) );
+
+    change = pre_order_traverse( stack, &process_beta_reduction );
+printf( "Just got done calling pre_order_traverse the third time.<br />\n" );
+printf( "about to call update_variables the third time, on node: %p<br />\n", node9 );
+//exit(1);
+    update_variables( node9 );
+printf( "Just got done calling update_variables the third time.<br />\n" );
+    printf( "After reducing the third time ( with change = %d ), the whole expression looks like: <br />\n", change );
+    printf( "%s<br />\n", print_lambda_expr( node9 ) );
+
+    change = pre_order_traverse( stack, &process_beta_reduction );
+printf( "Just got done calling pre_order_traverse the fourth time.<br />\n" );
+printf( "about to call update_variables the fourth time, on node: %p<br />\n", node9 );
+//exit(1);
+    update_variables( node9 );
+printf( "Just got done calling update_variables the fourth time.<br />\n" );
+    printf( "After reducing the fourth time ( with change = %d ), the whole expression looks like: <br />\n", change );
+    printf( "%s<br />\n", print_lambda_expr( node9 ) );
+
+    change = pre_order_traverse( stack, &process_beta_reduction );
+printf( "Just got done calling pre_order_traverse the fifth time.<br />\n" );
+printf( "about to call update_variables the fifth time, on node: %p<br />\n", node9 );
+//exit(1);
+    update_variables( node9 );
+printf( "Just got done calling update_variables the fifth time.<br />\n" );
+    printf( "After reducing the fifth time ( with change = %d ), the whole expression looks like: <br />\n", change );
+    printf( "%s<br />\n", print_lambda_expr( node9 ) );
+*/
 }
