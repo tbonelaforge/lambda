@@ -25,6 +25,17 @@ int main( int argc, char * argv[] ) {
     struct lambda_expr * parsed_result = parse( lambda_code, &error );
 
     set_global_V( hashlookup( get_NODE_HASH(), "VAR" )->data );
+    
+    printf( "Before evaluating the parsed result, it looks like: <br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( parsed_result ) );
+
+    struct lambda_expr * evaluated_result = evaluate( parsed_result );
+
+    printf( "After evaluating the result, it looks like: <br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( evaluated_result ) );
+    
+    /*
+
     struct lambda_expr * root = new_lambda_expr();
     strcpy( root->type, "ROOT" );
     root->child[0] = parsed_result;
@@ -49,8 +60,13 @@ int main( int argc, char * argv[] ) {
     update_variables( root );
     printf( "%s<br />\n", print_lambda_expr( root ) );
     int change = 0;
-    while ( change = pre_order_traverse( stack, &process_beta_reduction ) ) {
+
+    // Repeatedly perform a lazy traversal, 
+    // stopping each time a beta reduction is processed to update variables.
+printf("About to perform the first pre_order_traversal.\n");
+    while ( change = pre_order_traverse( stack, &process_beta_reduction, 1 ) ) {
 	update_variables( root );
 	printf( "%s<br />\n", print_lambda_expr( root ) );
     }
+    */
 }

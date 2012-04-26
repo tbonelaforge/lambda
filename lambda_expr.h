@@ -58,11 +58,14 @@ int try_to_delete(struct lambda_expr *);
 char * fresh_variable( char *, struct hash * );
 void change_child( int, struct list *, int, struct lambda_expr * );
 int process_beta_reduction( struct lambda_search_state *, struct list * );
-int pre_order_traverse( struct list *, int (*process_and_stop)( struct lambda_search_state *, struct list * ) );
+int pre_order_traverse( struct list *, int (*process_and_stop)( struct lambda_search_state *, struct list * ), int );
 struct lambda_expr * copy_lambda_expr( struct lambda_expr * );
 void add_to_global_V( char *, struct lambda_expr * );
 void delete_from_global_V( char * );
 void set_global_V( struct hash * );
 struct hash * get_global_V();
+struct lambda_expr * evaluate( struct lambda_expr * expr );
+struct lambda_expr * bind_free_variable( struct lambda_expr * source, struct hash * namespace );
+void evaluate_namespace( struct hash * namespace );
 
 #endif // #ifndef _LAMBDA_EXPR_H

@@ -10,7 +10,7 @@
 int main() {
 
     struct lambda_expr * node1, * node2, * node3, * node4, * node5, * node6, * node7, * node8, * node9, * node10, * node11, * node12, * root;
-    struct lambda_expr	* result;
+    struct lambda_expr * result;
     char * xstring, * ystring, * fstring, * wstring, * zstring;
     struct lambda_search_state * state1, * state2, * stack_top;
     struct list * stack;
@@ -791,6 +791,7 @@ int main() {
     printf( "%s<br />\n", print_lambda_expr( node7 ) );
 */
 
+/*
     //
     // Testing
     //
@@ -879,7 +880,7 @@ printf( "Made it past the manual test.<br />\n" );
 printf( "About to try and parse the test string of %s<br />\n", test_string );
     struct lambda_expr * parsed_result = parse( test_string, error );
 printf( "made it past the parsing of the test string.<br />\n" );
-    // Try and propagate varnames to the evaluator's V hash.
+    // Propagate varnames to the evaluator's V hash.
     set_global_V( hashlookup( get_NODE_HASH(), "VAR" )->data );
 printf( "Before starting any reductions, the global V hash looks like:<br />\n" );
 printf( "%s<br />\n", hashtreeprint( get_global_V(), "" ) );
@@ -912,6 +913,7 @@ printf( "%s<br />\n", print_lambda_expr( node9 ) );
 	update_variables( node9 );
 	printf( "%s<br />\n", print_lambda_expr( node9 ) );
     }
+*/
     /*
 
 
@@ -957,4 +959,142 @@ printf( "Just got done calling update_variables the fifth time.<br />\n" );
     printf( "After reducing the fifth time ( with change = %d ), the whole expression looks like: <br />\n", change );
     printf( "%s<br />\n", print_lambda_expr( node9 ) );
 */
+
+/*
+    // Testing bind_free_variable function.
+    char * source_string = "\\y(y,x)";
+    char * error;
+    fill_TABLE();
+    fill_GOTO();
+    fill_TRIE();
+    init_NODE_HASH();
+    
+    struct lambda_expr * source = parse( source_string, &error );
+    update_variables( source );
+    printf( "The source expression looks like:<br />\n" );
+    printf( "%s<br />", print_lambda_expr( source ) );
+    char * x_string = "\\z.z";
+    struct lambda_expr * x = parse( x_string, &error );
+    update_variables( x );
+    printf( "The x expression looks like:<br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( x ) );
+    struct hash * namespace = new_hash();
+    add_to_hash( namespace, "poop", (void *) x );
+
+    // Tell the evaluator about all the variables encountered during parsing.
+    set_global_V( hashlookup( get_NODE_HASH(), "VAR" )->data );
+
+    result = bind_free_variable( source, namespace );
+    printf( "After binding: <br />\n" );
+    if ( result ) {
+	printf( "%s<br />\n", print_lambda_expr( result ) );
+    }
+    else {
+	printf( "The result was null." );
+    }
+*/
+
+/*
+    // Testing the evaluate_namespace function.
+    char * error;
+    char * or_string = "\\p\\q((p,true),q)";
+    
+    fill_TABLE();
+    fill_GOTO();
+    fill_TRIE();
+    init_NODE_HASH();
+
+    struct lambda_expr * or_exp = parse( or_string, &error );
+    update_variables( or_exp );
+
+    char * true_string = "\\x\\y.x";
+
+    struct lambda_expr * true_exp = parse( true_string, &error );
+    update_variables( true_exp );
+
+    set_global_V( hashlookup( get_NODE_HASH(), "VAR" )->data );
+
+    struct hash * namespace = new_hash();
+
+    add_to_hash( namespace, "or", or_exp );
+    add_to_hash( namespace, "true", true_exp );
+
+    printf( "Before evaluation of the namespace, 'or' is: " );
+    printf( "%s<br />\n", print_lambda_expr( hashlookup( namespace, "or" )->data ) );
+    printf( "Also, the 'true' expression is: " );
+    printf( "%s<br />\n", print_lambda_expr( hashlookup( namespace, "true" )->data ) );
+
+    printf( "About to evaluate namespace. ( cross your fingers! )" );
+    evaluate_namespace( namespace );
+
+    printf( "The evaluated 'or' is: <br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( hashlookup( namespace, "or" )->data ) );
+
+    printf( "The evaluated 'true' is: <br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( hashlookup( namespace, "true" )->data ) );
+*/
+
+    // Testing the evaluate_namespace function.
+    char * error;
+    
+    fill_TABLE();
+    fill_GOTO();
+    fill_TRIE();
+    init_NODE_HASH();
+
+
+    char * one_plus_two_string = "((plus,one),two)";
+    struct lambda_expr * one_plus_two_expr = parse( one_plus_two_string, &error );
+    update_variables( one_plus_two_expr );
+
+    char * plus_string = "\\m\\n\\f\\x((m,f),((n,f),x))";
+    struct lambda_expr * plus_expr = parse( plus_string, &error );
+    update_variables( plus_expr );
+
+    char * two_string = "((plus,one),one)";
+    struct lambda_expr * two_expr = parse( two_string, &error );
+    update_variables( two_expr );
+
+    char * one_string = "\\f\\x(f,x)";
+    struct lambda_expr * one_expr = parse( one_string, &error );
+    update_variables( one_expr );
+
+    set_global_V( hashlookup( get_NODE_HASH(), "VAR" )->data );
+
+    struct hash * namespace = new_hash();
+
+    add_to_hash( namespace, "one_plus_two", one_plus_two_expr );
+    one_plus_two_expr->parents += 1;
+    add_to_hash( namespace, "plus", plus_expr );
+    plus_expr->parents += 1;
+    add_to_hash( namespace, "two", two_expr );
+    two_expr->parents += 1;
+    add_to_hash( namespace, "one", one_expr );
+    one_expr->parents += 1;
+
+    printf( "Before evaluation of the namespace, 'one_plus_two' is: " );
+    printf( "%s<br />\n", print_lambda_expr( hashlookup( namespace, "one_plus_two" )->data ) );
+    printf( "Also, the 'plus' expression is: " );
+    printf( "%s<br />\n", print_lambda_expr( hashlookup( namespace, "plus" )->data ) );
+    printf( "Also, the 'two' expression is: " );
+    printf( "%s<br />\n", print_lambda_expr( hashlookup( namespace, "two" )->data ) );
+    printf( "Also, the 'one' expression is: " );
+    printf( "%s<br />\n", print_lambda_expr( hashlookup( namespace, "one" )->data ) );
+
+    printf( "About to evaluate namespace. ( cross your fingers! )" );
+    evaluate_namespace( namespace );
+
+    printf( "The evaluated 'one_plus_two' is: <br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( hashlookup( namespace, "one_plus_two" )->data ) );
+
+    printf( "The evaluated 'plus' is: <br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( hashlookup( namespace, "plus" )->data ) );
+
+    printf( "The evaluated 'two' is: <br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( hashlookup( namespace, "two" )->data ) );
+
+    printf( "The evaluated 'one' is: <br />\n" );
+    printf( "%s<br />\n", print_lambda_expr( hashlookup( namespace, "one" )->data ) );
+
+
 }

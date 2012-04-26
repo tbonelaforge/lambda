@@ -520,6 +520,9 @@ void change_child( int choice, struct list * stack, int i, struct lambda_expr * 
     if ( i + 1 < stack->next_index ) {
 	struct lambda_search_state * later_state = listlookup( stack, i + 1 );
 	later_state->parent = node_copy;
+	if ( later_state->parent_choice == choice ) { // Change stack.
+	    later_state->current = new_child;
+	}
     }
 
     // Connect the new copy into the old path.
@@ -591,8 +594,8 @@ Output: 1 or 0, depending on whether the traversal ended prematurely ( done proc
 
 ============================================================*/
 
-int pre_order_traverse( struct list * stack, int (*process_and_stop)( struct lambda_search_state *, struct list * ) ) {
-    int done_processing = 0;
+int pre_order_traverse( struct list * stack, int (*process_and_stop)( struct lambda_search_state *, struct list * ), int lazy ) {
+    int changed = 0;
     int current_progress = 0;
     int original_i = stack->next_index - 1;
     struct lambda_search_state * stack_top = listlookup( stack, original_i );
@@ -602,21 +605,19 @@ int pre_order_traverse( struct list * stack, int (*process_and_stop)( struct lam
     while ( 1 ) {
 	if ( ! stack_top ) {
 	    stack_top = listlookup( stack, stack->next_index - 1 );
-	    current = stack_top->current;
 	}
-	else {
-	    // The variable current  may no longer point to valid memory,
-	    // If, for example, the last processing was a beta reduction,
-	    // but if so, then we are done processing, 
-	    // and won't have to check current->child
-	}
+	current = stack_top->current;
 	current_progress = stack_top->progress;
 	stack_top->progress += 1;
-	if ( !current_progress && !done_processing ) {
-	    done_processing = (*process_and_stop)( stack_top, stack );
+	if ( !current_progress && ( !changed || !lazy ) ) {
+	    int processed = (*process_and_stop)( stack_top, stack );
+	    if ( processed ) {
+		stack_top->progress = 3; // Don't process kids.
+	    }
+	    changed = changed || processed;
 	}
 	else if ( current_progress < 3 
-	    && !done_processing 
+            && ( !changed || !lazy )
 	    && current->child[current_progress - 1] ) {
 	    struct lambda_search_state * new_search_state = new_lambda_search_state();
 	    new_search_state->parent = current;
@@ -628,7 +629,7 @@ int pre_order_traverse( struct list * stack, int (*process_and_stop)( struct lam
 	else { // Node has finished processing.
 	    if ( stack->next_index - 1 == original_i ) {
 		stack_top->progress = original_progress; // Restore.
-		return done_processing;
+		return changed;
 	    }
 	    free( pop_from_list(stack) );
 	    stack_top = NULL;
@@ -656,8 +657,10 @@ struct lambda_expr * substitute( struct lambda_expr * expr, struct lambda_expr *
     // Set global vars to be accessed during the traversal.
     EXPR = expr;
     VAR = var;
-//    return pre_order_traverse( stack, &process_substitution_candidate );
-    pre_order_traverse( stack, &process_substitution_candidate );
+
+    // Perform a non-lazy traversal, 
+    // making sure that all substitution candidates are processed.
+    pre_order_traverse( stack, &process_substitution_candidate, 0 );
     struct lambda_search_state * stack_top = listlookup( stack, stack->next_index - 1 );
     return stack_top->current;
 }
@@ -672,9 +675,10 @@ Input: A search state to process,
        and stack of lambda search states
        ( having the given state at the top ).
 
-Output: 0, but the node represented by the state at the top
-        of the stack has been processed as a substitution 
-	candidate, according to the global VAR and EXPR constants.
+Output: 0 or 1, 
+        depending on whether the node represented by the state at the top
+        of the stack has been processed as a sustitution 
+	candidate or not, according to the global VAR and EXPR constants.
 	The stack has been changed if necessary.
 
 ============================================================*/
@@ -685,6 +689,7 @@ int process_substitution_candidate( struct lambda_search_state * current_state, 
 
 	// Use change_child to substitute EXPR for VAR.
 	change_child( current_state->parent_choice, stack, original_i - 1, EXPR );
+	return 1;
     }
     else if ( !strcmp( current_state->current->type, "LAMBDA" ) ) {
 	struct lambda_expr * left_child = current_state->current->child[0];
@@ -720,7 +725,10 @@ void rename_var( struct lambda_expr * var, struct list * stack ) {
     new_var->data = fresh_varname;
     FRESH_VAR = new_var;
     add_to_global_V( fresh_varname, new_var );
-    pre_order_traverse( stack, &process_rename_candidate );
+
+    // Perform a non-lazy traversal,
+    // making sure that all rename candidates are processed.
+    pre_order_traverse( stack, &process_rename_candidate, 0 );
     return;
 }
 
@@ -734,8 +742,9 @@ Input: A pointer to a search state representing a rename candidate,
        and a pointer to a list ( stack ) of search states, 
        such that the given state is on top.
 
-Output: 0, but the node represented by the search state has been renamed,
-        if applicable, using the global vars TO_BE_RENAMED, and FRESH_VAR.
+Output: 1 or 0, 
+        depending on if the node represented by the search state has been renamed,
+        using the global vars TO_BE_RENAMED, and FRESH_VAR.
 
 ============================================================*/
 
@@ -746,7 +755,8 @@ int process_rename_candidate( struct lambda_search_state * current_state, struct
 	    stack,
 	    stack->next_index - 2,
 	    FRESH_VAR
-        );	     
+        );
+	return 1;
     }
     return 0;
 }
@@ -787,41 +797,6 @@ int try_to_delete(struct lambda_expr * current) {
     return 1;
 }
 
-
-/*============================================================
-
-Function: rename_bound_var
-
-Input: A pointer to a lambda expression of type "LAMBDA",
-       whose variable ( left child ) needs to be renamed,
-       and a global hash V of used variable names.
-
-Output: Nothing, but all instances of the original bound variable
-        have been replaced by a fresh variable.
-
-============================================================*/
-
-/*
-void rename_bound_var( struct lambda_expr * current, struct hash * V ) {
-    struct lambda_expr * old_var = current->child[0];
-    struct lambda_expr * body = current->child[1];
-    char * fresh_varname = fresh_variable( old_var->data, V );
-    struct lambda_expr * new_var = new_lambda_expr();
-    new_var->data = fresh_varname;
-    strcpy( new_var->type, "VAR" );
-    old_var->parents -= 1;
-    current->child[0] = new_var;
-    new_var->parents += 1;
-    if ( try_to_delete(old_var) ) {
-	return; // No more instances to replace.
-    }
-    body->parents -= 1;
-    body = substitute( new_var, old_var, body, V );
-    body->parents += 1;
-    current->child[1] = body;
-    return;
-}
-*/
 
 /*============================================================
 
@@ -901,4 +876,151 @@ Output: Nothing, but the given key has been deleted from the global hash V.
 void delete_from_global_V( char * key ) {
     delete_from_hash( V, key );
     return;
+}
+
+
+/*============================================================
+
+Function: evaluate
+
+Input: A pointer to a lambda_expr.
+
+Output: A pointer to an evaluated version of the given lambda_expr.
+
+============================================================*/
+
+struct lambda_expr * evaluate( struct lambda_expr * expr ) {
+    struct lambda_expr * root = new_lambda_expr();
+    strcpy( root->type, "ROOT" );
+    root->child[0] = expr;
+    expr->parents += 1;
+
+    struct lambda_search_state * state1 = new_lambda_search_state();
+    state1->parent = NULL;
+    state1->current = root;
+    state1->parent_choice = 0;
+    state1->progress = 0;
+
+    struct lambda_search_state * state2 = new_lambda_search_state();
+    state2->parent = root;
+    state2->current = expr;
+    state2->parent_choice = 0;
+    state2->progress = 0;
+
+    struct list * stack = new_list();
+    append_to_list( stack, state1 );
+    append_to_list( stack, state2 );
+
+    int change = 0;
+    update_variables( root );
+
+    while ( change = pre_order_traverse( stack, &process_beta_reduction, 1 ) ) {
+	update_variables( root );
+    }
+    expr = root->child[0];
+    root->child[0] = NULL;
+    expr->parents -= 1;
+    try_to_delete( root );
+    free( state2 );
+    free( state1 );
+    return expr;
+}
+
+
+/*============================================================
+
+Function: bind_free_variable
+
+Input: A pointer to an expression, 
+       and a pointer to a namespace hash 
+       ( varnames -> expresssions ), to use when binding.
+
+Output: Either a new expression, 
+        resulting from substituting one expression from the namespace
+	in for one free variable of the expression, or
+	NULL, if not possible.
+
+============================================================*/
+
+struct lambda_expr * bind_free_variable( struct lambda_expr * source, struct hash * namespace ) {
+    struct list * free_vars = new_list();
+    list_keys_in_hash( source->free, free_vars, "" );
+    int i;
+    struct lambda_expr * result = NULL;
+    for ( i = 0; i < free_vars->next_index; i++ ) {
+	char * free_var = listlookup( free_vars, i );
+	struct hash * looked_up = hashlookup( namespace, free_var );
+	if ( ! looked_up ) {
+	    continue;
+	}
+	struct lambda_expr * expr = looked_up->data;
+	if ( hashlookup( expr->free, free_var ) ) {
+	    continue; // Don't substitute self-referential structures.
+	}
+
+	struct lambda_expr * temp_lambda = new_lambda_expr();
+	strcpy( temp_lambda->type, "LAMBDA" );
+	struct lambda_expr * bound_var = hashlookup( V, free_var )->data;
+	temp_lambda->child[0] = bound_var;
+	bound_var->parents += 1;
+	temp_lambda->child[1] = source;
+	source->parents += 1;
+
+	struct lambda_expr * temp_beta = new_lambda_expr();
+	strcpy( temp_beta->type, "BETA" );
+	temp_beta->child[0] = temp_lambda;
+	temp_lambda->parents += 1;
+	temp_beta->child[1] = expr;
+	expr->parents += 1;
+	result = evaluate( temp_beta );
+	break;
+    }
+    destroy_key_list( free_vars );
+    return result;
+}
+
+
+
+/*============================================================
+
+Function: evaluate_namespace
+
+Input: A pointer to a hash of evaluated lambda_expressions, 
+       indexed by name.
+
+Output: Nothing, but any cross-references in the namespace have been
+        "filled-out", such that the original names now point to 
+	the fully-evaluated expressions.
+
+============================================================*/
+
+void evaluate_namespace( struct hash * namespace ) {
+    struct list * names = new_list();
+    list_keys_in_hash( namespace, names, "" );
+    int changed = 1;
+    int i;
+    struct lambda_expr * named_expr;
+    struct lambda_expr * changed_expr;
+    char * name;
+    while ( changed ) {
+	changed = 0;
+	for ( i = 0; i < names->next_index; i++ ) {
+	    name = listlookup( names, i );
+	    named_expr = hashlookup( namespace, name )->data;
+	    if ( hashlookup( named_expr->free, name ) ) {
+		continue; // Don't mess with recursive definitions.
+	    }
+	    
+	    // Uninstall expression from namespace while trying to evaluate.
+	    named_expr->parents -= 1;
+	    changed_expr = bind_free_variable( named_expr, namespace );
+	    if ( changed_expr ) {
+		add_to_hash( namespace, name, changed_expr );
+		changed_expr->parents += 1; // Install the new expression in the namespace.
+		changed = 1;
+		break;
+	    }
+	    named_expr->parents += 1; // Install the expression back into the namespace.
+	}
+    }
 }
