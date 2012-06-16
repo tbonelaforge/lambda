@@ -14,7 +14,9 @@
 struct hash * NAMESPACE = NULL; // Will index all the expressions, by name.
 
 
-// Define the reduction functions.
+////////////////////////////////////////////////////////////
+// Reduction Functions /////////////////////////////////////
+////////////////////////////////////////////////////////////
 
 /*============================================================
 
@@ -492,46 +494,33 @@ int main( int argc, char * argv[] ) {
                        "\n", (void *) "newline"
                        );
 
-
-    //    printf( "Setting GRAMMAR.<br />\n" );
     set_GRAMMAR( my_grammar, ( sizeof my_grammar ) / ( sizeof my_grammar[0] ) );
 
-    //    printf( "Analyzing productions.<br />\n" );
     analyze_productions();
 
-    //    printf( "Filling the FIRST hash.<br />\n" );
     fill_FIRST();
 
-    //    printf( "Filling the FOLLOW hash.<br />\n" );
     fill_FOLLOW();
 
-    //    printf( "Filling TABLES.<br />\n" );
     fill_TABLES();
     
-    //    printf( "Filling TRIE.<br />\n" );
     fill_TRIE( token_types );
 
-    //    printf( "Initializing NODE_HASH.<br />\n" );
     init_NODE_HASH();
 
-    //    printf( "Initializing NAMESPACE.<br />\n" );
     NAMESPACE = new_hash();
 
-    // Test parsing function.
-    //char * test_string = "a:(b,c);";
-    //char * test_string = "a:(\\x.y,z);\nb:(a,x);";
-    //char * test_string = "first:(\\x.y,z);";
-    //    char * test_string = "two:((plus,one),one);\none:\\f\\x(f,x);\nplus:\\m\\n\\f\\x((m,f),((n,f),x));";
 
-    char * error;
+    char * error =  "";
 
     struct lambda_expr * parse_tree = parse( lambda_code, &error );
     printf( "The result of the parse is: <br />\n" );
     print_NAMESPACE();
-    printf( "The error is:<br />\n" );
-    printf( "%s<br />\n", error );
+    if ( strlen( error ) ) {
+        printf( "The error is:<br />\n" );
+        printf( "%s<br />\n", error );
+    }
 
-    //    printf( "About to try evaluating the namespace.<br />\n" );
     set_global_V( hashlookup( get_NODE_HASH(), "VAR" )->data );
     evaluate_namespace( NAMESPACE );
 
