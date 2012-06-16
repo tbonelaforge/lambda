@@ -1,0 +1,3 @@
+This is a "list" data structure, which is actually implemented using a hash.
+Indexes into the list ( integers ) are converted to strings first,
+and the strings are used as keys to a hash which stores the list values.
