@@ -18,8 +18,7 @@ two:((plus,one),one);
 one:\f\x(f,x);
 plus:\m\n\f\x((m,f),((n,f),x));
 
-Each semicolon-terminated line of input establishes an entry in a namespace,
-or symbol table. For example, after parsing the first line above, 
+Each semicolon-terminated line of input establishes an entry in a namespace ( symbol table ). For example, after parsing the first line above, 
 the operator tree for "((plus,one),one)" will be 
 stored in the namespace under the name "two".
 
