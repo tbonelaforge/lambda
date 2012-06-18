@@ -1,0 +1,7 @@
+or:\m\n((m,true),n);
+or_true_true:((or,true),true);
+or_true_false:((or,true),false);
+or_false_true:((or,false),true);
+or_false_false:((or,false),false);
+true:\x\y.x;
+false:\a\b.b;
