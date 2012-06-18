@@ -1,0 +1,4 @@
+multiply:\m\n\f(m,(n,f));
+two:\f\x(f,(f,x));
+four:((multiply,two),two);
+eight:((multiply,two),four);
