@@ -1,0 +1,7 @@
+true:\x\y.x;
+false:\x\y.y;
+and:\a\b((a,b),false);
+and_true_true:((and,true),true);
+and_true_false:((and,true),false);
+and_false_true:((and,false),true);
+and_false_false:((and,false),false);
