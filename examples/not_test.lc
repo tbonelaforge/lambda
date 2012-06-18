@@ -1,0 +1,5 @@
+not:\g((g,false),true);
+not_true:(not,true);
+not_false:(not,false);
+true:\x\y.x;
+false:\x\y.y;
