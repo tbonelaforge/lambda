@@ -1,8 +1,11 @@
 all: list hash lambda
 
-lambda: lambda.c lambda_expr.o lambda_parser.o ./hash/hash.a ./list/list.o
+lambda: lambda.c lambda_expr.o lambda_parser.o \
+	./hash/hash.o ./hash/charhash.o ./hash/hash_default.o \
+	 ./list/list.o
 	gcc -I ./hash -I ./list lambda.c \
-	 ./hash/hash.a ./list/list.o lambda_expr.o lambda_parser.o \
+	 ./hash/hash.o ./hash/charhash.o ./hash/hash_default.o \
+	 ./list/list.o lambda_expr.o lambda_parser.o \
 	-o lambda
 
 lambda_expr.o: lambda_expr.c lambda_expr.h

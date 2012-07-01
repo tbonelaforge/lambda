@@ -1,7 +1,4 @@
-all: hash.a
-
-hash.a: charhash.o hash.o hash_default.o
-	ar -rvs hash.a charhash.o hash.o hash_default.o
+all: hash.o charhash.o hash_default.o
 
 charhash.o: charhash.c charhash.h
 	gcc -I . -c charhash.c -o charhash.o
