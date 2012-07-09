@@ -1,0 +1,12 @@
+pair:\x\y\f((f,x),y);
+first:\pair(pair,true);
+second:\pair(pair,false);
+true:\x\y.x;
+false:\f\x.x;
+inc:\m\f\x(f,((m,f),x));
+unshift:\list\element((pair,element),list);
+lengthen:\list((unshift,list),(inc,(first,list)));
+four:\f\x(f,(f,(f,(f,x))));
+base_list:((pair,false),false);
+decrement:\m(first,(second,((m,lengthen),base_list)));
+three:(decrement,four);
