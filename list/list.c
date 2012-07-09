@@ -23,7 +23,6 @@ Output: A pointer to a newly allocated list structure,
 struct list * new_list() {
 
     struct hash_default * my_hash_default = new_hash_default();
-
     if ( ! my_hash_default ) { 
 	printf( "Out of memory!\n" );
 	return NULL;
@@ -86,9 +85,7 @@ struct list * append_to_list( struct list * current, void * data ) {
     add_to_hash( current->main_hash->main_hash, next_index_string, data );
     free(next_index_string);
     current->next_index++;
-
     return current;
-
 }
 
 

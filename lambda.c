@@ -480,7 +480,6 @@ int main( int argc, char * argv[] ) {
         { production15, &compress_TEXT1 }
     };
 
-
     // Set up tokens.
     struct hash * token_types = new_hash();
     add_pairs_to_hash( token_types, 8,
@@ -503,13 +502,12 @@ int main( int argc, char * argv[] ) {
     fill_FOLLOW();
 
     fill_TABLES();
-    
+
     fill_TRIE( token_types );
 
     init_NODE_HASH();
 
     NAMESPACE = new_hash();
-
 
     char * error =  "";
 
@@ -526,7 +524,6 @@ int main( int argc, char * argv[] ) {
 
     printf( "After evaluating the namespace, it looks like:<br />\n" );
     print_NAMESPACE();
-
 
 }
 

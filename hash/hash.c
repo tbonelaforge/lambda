@@ -256,7 +256,6 @@ Output: A hash_search_state structure,
 
 ============================================================*/
 
-
 struct hash_search_state hash_search( struct hash * root, char * key ) {
     struct hash * parent = NULL;
     struct hash * node = root;
@@ -593,10 +592,10 @@ Output: A pointer to a newly allocated hash structure,
 
 
 struct hash * new_hash() {
-
     struct hash * newnode = ( struct hash * ) malloc(sizeof(struct hash));
-
-    if( ! newnode ) return NULL;
+    if( ! newnode ) { 
+        return NULL; 
+    }
 
     newnode->data = 0;
     newnode->sigstr = malloc( 1 *sizeof(char) );
@@ -630,7 +629,6 @@ Output: destination.
 ============================================================*/
 
 char * sub_strcpy( char * destination, char * source, int num_to_copy ) {
-
     int i;
     for( i = 0; i < num_to_copy; i++ ) {
         destination[i] = source[i];

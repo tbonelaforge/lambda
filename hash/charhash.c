@@ -273,14 +273,14 @@ Output: A pointer to a newly allocated charhash structure,
 =============================================================*/
 
 struct charhash* new_charhash() {
-
     struct charhash* newnode = ( struct charhash* ) malloc(sizeof(struct charhash));
-
-    if( ! newnode ) return NULL;
-
+    if( ! newnode ) {
+        return NULL;
+    }
     newnode->data = 0;
     newnode->sig = newnode->siglen = 0;
     newnode->child[0] = newnode->child[1] = NULL;
+    return newnode;
 
 } // End function new_charhash
 

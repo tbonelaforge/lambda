@@ -1033,6 +1033,7 @@ struct token * new_token() {
     t->type = NULL;
     t->first = 0;
     t->last = 0;
+    return t;
 }
 
 

@@ -18,7 +18,6 @@ Output: A pointer to a newly allocated hash_default structure,
 *************************************************************/
 
 struct hash_default * new_hash_default() {
-
     struct hash_default * result = malloc(sizeof(struct hash_default));
     if ( !result ) {
 	printf("Out of memory!\n");
