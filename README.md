@@ -6,14 +6,14 @@ Getting Started:
 4. ./lambda ./examples/my_first_namespace.lc > output.html
 5. Open output.html in a web browser.
 
-The interpreter was built for educational purposes, and produces a very detailed representation of the program, before and after evaluation.
+Typing "make" in the top-level directory produces the **lambda** interpreter, which is an executable file. The interpreter was built for educational purposes, and produces a detailed representation of the program, before and after evaluation.
 If the lambda executable is given a filename as command-line argument, e.g.
 
     lambda ./examples/my_first_namespace.lc
 
-it will parse the specified file ( if it conforms to the required grammar ), 
+it will parse the specified file, 
 and execute the resulting program.  
-This process will produce html output which, when viewed in a web browser, 
+This process will produce **HTML** output which, when viewed in a web browser, 
 shows a graphical representation of the operator trees before evaluation of the program,
 and the final operator trees after evaluation is all finished.
 
