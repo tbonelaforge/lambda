@@ -1,5 +1,3 @@
-This is an interpreter for a programming language based on the Lambda Calculus.
-
 Getting Started:
 
 1. git clone git@github.com:tbonelaforge/lambda.git
