@@ -36,6 +36,6 @@ For example, the expression:
 Defines a function which takes two arguments ( 'f' and 'x', in that order ), 
 and applies the first argument to the second.
 
-The program defined in ** my_first_namespace.lc ** defines the [Church Numeral](https://en.wikipedia.org/wiki/Church_encoding) for the number 1, 
+The program defined in **my_first_namespace.lc** defines the [Church Numeral](https://en.wikipedia.org/wiki/Church_encoding) for the number 1, 
 and a function to add two church numerals together. 
 Then, it calculates the church numeral for the number 2 by adding 1 + 1.
