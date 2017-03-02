@@ -1,7 +1,14 @@
 This is an interpreter for a programming language based on the Lambda Calculus.
-Typing 'make' in the top-level directory will compile all the source code,
-and produce an executable called 'lambda'.
 
+Getting Started:
+
+1. git clone git@github.com:tbonelaforge/lambda.git
+2. cd lambda
+3. make
+4. ./lambda ./examples/my_first_namespace.lc > output.html
+5. Open output.html in a web browser.
+
+The interpreter was built for educational purposes, and produces a very detailed representation of the program, before and after evaluation.
 If the lambda executable is given a filename as command-line argument, e.g.
 
 lambda ./examples/my_first_namespace.lc
