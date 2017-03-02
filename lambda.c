@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "lambda_parser.h"
 #include "lambda_expr.h"
@@ -196,7 +197,7 @@ struct lambda_expr * compress_BETA( int prod_num, struct list * stack ) {
     struct lambda_expr * node;
     struct hash * hash_node;
     struct hash * BETAS = hashlookup( get_NODE_HASH(), "BETA" )->data;
-    if ( hash_node = hashlookup( BETAS, key ) ) {
+    if ( (hash_node = hashlookup( BETAS, key )) ) {
 	free( key );
 	return hash_node->data;
     }
@@ -235,7 +236,7 @@ struct lambda_expr * compress_LAMBDA1( int prod_num, struct list * stack ) {
     struct lambda_expr * node;
     struct hash * hash_node;
     struct hash * LAMBDAS = hashlookup( get_NODE_HASH(), "LAMBDA" )->data;
-    if ( hash_node = hashlookup( LAMBDAS, key ) ) {
+    if ( (hash_node = hashlookup( LAMBDAS, key )) ) {
 	free( key );
 	return hash_node->data;
     }
@@ -277,7 +278,7 @@ struct lambda_expr * compress_LAMBDA2( int prod_num, struct list * stack ) {
     struct lambda_expr * node;
     struct hash * hash_node;
     struct hash * LAMBDAS = hashlookup( get_NODE_HASH(), "LAMBDA" )->data;
-    if ( hash_node = hashlookup( LAMBDAS, key ) ) {
+    if ( (hash_node = hashlookup( LAMBDAS, key )) ) {
 	free( key );
 	return hash_node->data;
     }
@@ -317,7 +318,7 @@ struct lambda_expr * compress_VAR( int prod_num, struct list * stack ) {
     struct hash * VARS = hashlookup( get_NODE_HASH(), "VAR" )->data;
     struct lambda_expr * node;
     struct hash * hash_node;
-    if ( hash_node = hashlookup( VARS, varname ) ) {
+    if ( (hash_node = hashlookup( VARS, varname )) ) {
 	free( varname );
 	return hash_node->data;
     }

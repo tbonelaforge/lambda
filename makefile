@@ -14,6 +14,9 @@ lambda_expr.o: lambda_expr.c lambda_expr.h
 lambda_parser.o: lambda_parser.c lambda_parser.h
 	gcc -I ./hash -I ./list -c lambda_parser.c -o lambda_parser.o
 
+clean:
+	find ./ -name '*.o' | xargs rm; rm lambda
+
 .PHONY: list
 
 list: 

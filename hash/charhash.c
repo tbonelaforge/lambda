@@ -192,8 +192,8 @@ char * charhashtreeprint( struct charhash * self ) {
     right_output = charhashtreeprint(self->child[1]);
 
     // Replace empty nodes with strings of blanks, where appropriate.
-    if( strlen(left_output) && !strlen(right_output) 
-        || strlen(right_output) && !strlen(left_output) ) {
+    if( (strlen(left_output) && !strlen(right_output))
+        || (strlen(right_output) && !strlen(left_output)) ) {
         if( !strlen(left_output) ) {
             free(left_output);
             left_output = malloc( ( strlen(blank_output) + 1 ) * sizeof(char) );
@@ -584,7 +584,7 @@ void absorb_single_charhash_child( struct char_search_state search_state ) {
     // Determine which child the search_state node has.
     char child_decision;
     struct charhash * child;
-    if ( child = search_state.node->child[0] ) {
+    if ( (child = search_state.node->child[0]) ) {
 	child_decision = 0;
     }
     else {
@@ -974,7 +974,7 @@ int charhash_test() {
     delete_from_charhash( test, 'a' );
     printf( "After deleting the key of 'a', the charhash looks like: \n<br />" );
     printf( "%s\n<br />", charhashtreeprint(test) );
-
+    return 0;
 
 } // End function main.
 

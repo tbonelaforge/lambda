@@ -660,8 +660,8 @@ struct token * get_next_token( char * string, int start ) {
     struct charhash * next_node = NULL;
     int i = start;
     char input_char;
-    while ( input_char = string[i] ) { // Loop characters of string.
-	if ( next_node = charhashlookup( current_node->child, input_char ) ) {
+    while ( (input_char = string[i]) ) { // Loop characters of string.
+	if ( (next_node = charhashlookup( current_node->child, input_char )) ) {
 	    current_node = next_node->data;
 	    i = i + 1;
 	}
@@ -791,7 +791,7 @@ char * create_closure_key( struct itemset * current_itemset ) {
             struct item * predicted_item = new_item();
             predicted_item->prod_num = predicted_p;
             char * predicted_key = create_item_key( predicted_item );
-            if ( looked_up = hashlookup( current_items, predicted_key ) ) { // Item unneeded.
+            if ( (looked_up = hashlookup( current_items, predicted_key )) ) { // Item unneeded.
                 free( predicted_item );
                 free( predicted_key );
                 continue;

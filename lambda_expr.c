@@ -92,10 +92,10 @@ Output: Nothing, but the free and bound variables of the
 
 void update_variables( struct lambda_expr * expr ) {
     struct lambda_expr * child;
-    if ( child = expr->child[0] ) {
+    if ( (child = expr->child[0]) ) {
 	update_variables(child);
     }
-    if ( child = expr->child[1] ) {
+    if ( (child = expr->child[1]) ) {
 	update_variables(child);
     }
     if ( !strcmp( expr->type, "LAMBDA" ) ) {
@@ -306,7 +306,7 @@ char * print_lambda_expr( struct lambda_expr * current ) {
 	     "<table cellpadding=\"5\">"
 	       "<tr align=\"center\">"
 	         "<td colspan=\"2\">"
-	           "%s<br />"
+             //	           "%s<br />"
 	           "%s<br />"
 	           "%s<br />"
 	           "%s<br />"
@@ -316,7 +316,7 @@ char * print_lambda_expr( struct lambda_expr * current ) {
 	         "<td>%s</td><td>%s</td>"
 	       "</tr>"
 	     "</table>",
-	     address_str,
+             //	     address_str,
 	     type_str,
 	     data_str,
 	     variables_str,
@@ -914,7 +914,7 @@ struct lambda_expr * evaluate( struct lambda_expr * expr ) {
     int change = 0;
     update_variables( root );
 
-    while ( change = pre_order_traverse( stack, &process_beta_reduction, 1 ) ) {
+    while ( (change = pre_order_traverse( stack, &process_beta_reduction, 1 )) ) {
 	update_variables( root );
     }
     expr = root->child[0];

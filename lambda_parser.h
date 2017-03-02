@@ -142,4 +142,5 @@ struct trie_node * new_trie_node();
 struct token * new_token();
 void destroy_itemset( struct itemset * );
 char * hash_key( struct lambda_expr *, struct lambda_expr *, char * );
+int expand_hash( struct hash *, struct hash * );
 #endif // #ifndef _LAMBDA_PARSER2_H_
